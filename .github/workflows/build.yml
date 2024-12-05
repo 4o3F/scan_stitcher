@@ -65,11 +65,11 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: imagetools-${{ matrix.os-image }}
+          name: scan_stitcher-${{ matrix.os-image }}
           path: |
-            target/release/imagetools
-            target/release/imagetools.exe
-            target/release/imagetools.pdb
+            target/release/scan_stitcher
+            target/release/scan_stitcher.exe
+            target/release/scan_stitcher.pdb
           retention-days: 14
   
 
