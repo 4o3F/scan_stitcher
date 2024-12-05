@@ -1,0 +1,20 @@
+[package]
+name = "scan_stitcher"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+opencv = { version = "0.93.1", default-features = false, features = [
+    "clang-runtime",
+    "imgproc",
+    "imgcodecs",
+] }
+regex = "1.11.0"
+rayon = "1.10.0"
+clap = { version = "4.5.20", features = ["derive"] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tracing = "0.1.40"
+tracing-unwrap = "1.0.1"
+tracing-indicatif = "0.3.6"
+indicatif = "0.17.8"

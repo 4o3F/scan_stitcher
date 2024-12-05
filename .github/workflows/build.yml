@@ -1,0 +1,97 @@
+# This is a basic workflow to help you get started with Actions
+
+name: build
+
+on:
+  push:
+    branches: [ "**" ]
+
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os-image:
+          - ubuntu-20.04
+          - windows-2022
+        include:
+          - os-image: ubuntu-20.04
+            opencv-version: 4.10.0
+            linkage: static
+            vcpkg-version: ""
+          - os-image: windows-2022
+            opencv-version: 4.10.0
+            linkage: static
+            vcpkg-version: 2024.07.12
+
+    runs-on: ${{ matrix.os-image }}
+    env:
+      Atlas_ROOT_DIR: /usr/include/ # for cmake to find lapacke.h
+      OPENCV_VERSION: ${{ matrix.opencv-version }}
+      OPENCV_LINKAGE: ${{ matrix.linkage }}
+      VCPKG_VERSION: ${{ matrix.vcpkg-version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/cache@v4
+        with:
+          path: ~/dist
+          key: dist-${{ matrix.opencv-version }}
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/build
+          key: build-${{ matrix.opencv-version }}-${{ matrix.linkage }}-${{ matrix.os-image }}
+
+      - name: Install dependencies
+        run: scripts/install.sh
+        shell: bash
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.os-image }}
+      - name: Build project
+        run: scripts/build.sh
+        shell: bash
+   
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: imagetools-${{ matrix.os-image }}
+          path: |
+            target/release/imagetools
+            target/release/imagetools.exe
+            target/release/imagetools.pdb
+          retention-days: 14
+  
+
+  release:
+    runs-on: ubuntu-20.04
+    needs: [build]
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v4
+        with:
+          path: /home/runner/release-binary
+      - name: Compress artifacts
+        run: |
+          cd /home/runner/release-binary
+          for i in */; do zip -r "${i%/}.zip" "$i"; done
+          ls /home/runner/release-binary
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          name: Dev build
+          tag_name: "pre-release"
+          files: |
+            /home/runner/release-binary/*.zip
+  
